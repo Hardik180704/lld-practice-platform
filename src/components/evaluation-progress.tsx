@@ -16,8 +16,11 @@ export function EvaluationProgress({
 }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [retrying, setRetrying] = useState(false);
 
   const runEvaluation = useCallback(async () => {
+    setRetrying(true);
+    setMessage("");
     try {
       const response = await fetch(`/api/attempts/${attemptId}/evaluate`, {
         method: "POST",
@@ -29,6 +32,7 @@ export function EvaluationProgress({
     } catch {
       setMessage("The evaluator could not be reached. Your submission is safe.");
     } finally {
+      setRetrying(false);
       router.refresh();
     }
   }, [attemptId, router]);
@@ -36,13 +40,43 @@ export function EvaluationProgress({
   useEffect(() => {
     if (status !== "SUBMITTED") return;
     const controller = new AbortController();
-    void fetch(`/api/attempts/${attemptId}/evaluate`, {
-      method: "POST",
-      signal: controller.signal,
-    })
-      .catch(() => undefined)
-      .finally(() => router.refresh());
-    return () => controller.abort();
+    let active = true;
+    let timedOut = false;
+    const timeout = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 15_000);
+
+    async function startEvaluation() {
+      try {
+        const response = await fetch(`/api/attempts/${attemptId}/evaluate`, {
+          method: "POST",
+          signal: controller.signal,
+        });
+        if (active && !response.ok && response.status !== 409) {
+          const result = await response.json().catch(() => null);
+          setMessage(result?.error ?? "Evaluation could not be completed.");
+        }
+      } catch {
+        if (active) {
+          setMessage(
+            timedOut
+              ? "The evaluator took too long to respond. Your submission is safe."
+              : "The evaluator could not be reached. Your submission is safe.",
+          );
+        }
+      } finally {
+        window.clearTimeout(timeout);
+        if (active) router.refresh();
+      }
+    }
+
+    void startEvaluation();
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
   }, [attemptId, router, status]);
 
   useEffect(() => {
@@ -51,7 +85,7 @@ export function EvaluationProgress({
     return () => window.clearInterval(timer);
   }, [router, status]);
 
-  const failed = status === "FAILED" || Boolean(message);
+  const failed = !retrying && (status === "FAILED" || Boolean(message));
 
   return (
     <section className={`evaluation-progress ${failed ? "is-failed" : ""}`} aria-live="polite">
@@ -67,7 +101,7 @@ export function EvaluationProgress({
         </p>
       </div>
       {failed ? (
-        <button className="button primary" onClick={() => { setMessage(""); void runEvaluation(); }} type="button">
+        <button className="button primary" disabled={retrying} onClick={() => void runEvaluation()} type="button">
           <RefreshCcw size={16} /> Retry evaluation
         </button>
       ) : (

@@ -71,7 +71,7 @@ The domain owns valid attempt transitions. The application layer coordinates wor
 
 ## Current limitations
 
-- A fixed `demo-learner` identity keeps authentication outside the two-day MVP.
+- Attempts are scoped to an anonymous, HTTP-only browser cookie. Authentication is intentionally outside the two-day MVP, so clearing browser data also clears access to that browser's history.
 - Submission and evaluation use separate requests, so learner work is committed before evaluation starts. A durable background queue is deliberately deferred; the state model is ready for one if latency or traffic grows.
 - The deterministic evaluator measures explicit evidence signals; it does not claim semantic understanding. Its purpose is a reliable baseline and a clean extension seam.
 - The MVP supports structured text only. A future diagram submission can implement a new submission-content adapter.

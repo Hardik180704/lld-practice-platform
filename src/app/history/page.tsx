@@ -1,3 +1,49 @@
-import Link from "next/link"; import { ArrowRight } from "lucide-react"; import { getPrisma } from "@/infrastructure/database/prisma";
-export const dynamic="force-dynamic";
-export default async function HistoryPage(){const attempts=await getPrisma().attempt.findMany({where:{learnerId:"demo-learner"},include:{problem:true,evaluation:true},orderBy:{startedAt:"desc"}});return <main className="page-shell"><p className="kicker">Progress over time</p><h1 className="page-title">Attempt history</h1><p className="hero-copy">Review earlier decisions, spot recurring gaps, and make the next version deliberate.</p><div className="history-list">{attempts.length===0?<div className="empty"><p>No attempts yet.</p><Link className="button primary" href="/#problems">Choose your first problem</Link></div>:attempts.map(attempt=><Link className="history-card" href={`/attempts/${attempt.id}`} key={attempt.id}><div><h3>{attempt.problem.title} · attempt {attempt.version}</h3><p>{attempt.startedAt.toLocaleDateString("en-IN",{dateStyle:"medium"})}</p></div><span className="score">{attempt.evaluation?.overallScore??"—"}</span><span className={`status ${attempt.status.toLowerCase()}`}>{attempt.status}</span><ArrowRight size={17}/></Link>)}</div></main>}
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { getPrisma } from "@/infrastructure/database/prisma";
+import { getCurrentLearnerId } from "@/infrastructure/learner-session";
+
+export const dynamic = "force-dynamic";
+
+export default async function HistoryPage() {
+  const learnerId = await getCurrentLearnerId();
+  const attempts = learnerId
+    ? await getPrisma().attempt.findMany({
+        where: { learnerId },
+        include: { problem: true, evaluation: true },
+        orderBy: { startedAt: "desc" },
+      })
+    : [];
+
+  return (
+    <main className="page-shell">
+      <p className="kicker">Progress over time</p>
+      <h1 className="page-title">Attempt history</h1>
+      <p className="hero-copy">
+        Review earlier decisions, spot recurring gaps, and make the next version deliberate.
+      </p>
+      <div className="history-list">
+        {attempts.length === 0 ? (
+          <div className="empty">
+            <p>No attempts yet.</p>
+            <Link className="button primary" href="/#problems">
+              Choose your first problem
+            </Link>
+          </div>
+        ) : (
+          attempts.map((attempt) => (
+            <Link className="history-card" href={`/attempts/${attempt.id}`} key={attempt.id}>
+              <div>
+                <h3>{attempt.problem.title} · attempt {attempt.version}</h3>
+                <p>{attempt.startedAt.toLocaleDateString("en-IN", { dateStyle: "medium" })}</p>
+              </div>
+              <span className="score">{attempt.evaluation?.overallScore ?? "—"}</span>
+              <span className={`status ${attempt.status.toLowerCase()}`}>{attempt.status}</span>
+              <ArrowRight size={17} />
+            </Link>
+          ))
+        )}
+      </div>
+    </main>
+  );
+}

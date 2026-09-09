@@ -5,6 +5,7 @@ import {
 } from "@/application/evaluate-attempt";
 import { getPrisma } from "@/infrastructure/database/prisma";
 import { RubricEvaluator } from "@/infrastructure/evaluation/rubric-evaluator";
+import { getCurrentLearnerId } from "@/infrastructure/learner-session";
 import { PrismaAttemptRepository } from "@/infrastructure/repositories/prisma-attempt-repository";
 
 export async function POST(
@@ -12,9 +13,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const learnerId = await getCurrentLearnerId();
+  if (!learnerId) return Response.json({ error: "Attempt not found." }, { status: 404 });
+
   const prisma = getPrisma();
-  const current = await prisma.attempt.findUnique({
-    where: { id },
+  const current = await prisma.attempt.findFirst({
+    where: { id, learnerId },
     select: { status: true },
   });
   if (!current) return Response.json({ error: "Attempt not found." }, { status: 404 });
@@ -33,7 +37,7 @@ export async function POST(
     await useCase.execute(id);
   } catch (error) {
     if (error instanceof AttemptNotFoundError) {
-      const attemptStillExists = await prisma.attempt.count({ where: { id } });
+      const attemptStillExists = await prisma.attempt.count({ where: { id, learnerId } });
       return Response.json(
         { error: attemptStillExists ? "Evaluation is already in progress or complete." : "Attempt not found." },
         { status: attemptStillExists ? 409 : 404 },

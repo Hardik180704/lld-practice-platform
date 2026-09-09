@@ -3,13 +3,17 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { EvaluationProgress } from "@/components/evaluation-progress";
 import { getPrisma } from "@/infrastructure/database/prisma";
+import { getCurrentLearnerId } from "@/infrastructure/learner-session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AttemptPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const attempt = await getPrisma().attempt.findUnique({
-    where: { id },
+  const learnerId = await getCurrentLearnerId();
+  if (!learnerId) notFound();
+
+  const attempt = await getPrisma().attempt.findFirst({
+    where: { id, learnerId },
     include: { problem: true, evaluation: { include: { results: { include: { criterion: true }, orderBy: { criterion: { position: "asc" } } } } } },
   });
   if (!attempt) notFound();
