@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DesignLoop
 
-## Getting Started
+DesignLoop is a focused Low-Level Design practice platform. A learner chooses a problem, explains a design in a structured format, receives evidence-backed rubric feedback, reviews earlier attempts, and tries again.
 
-First, run the development server:
+## Why this MVP
+
+LLD problems rarely have one correct class diagram. A useful practice tool therefore needs to evaluate reasoning—not resemblance to a reference solution. DesignLoop asks for assumptions, responsibilities and interactions, trade-offs, and edge cases. Feedback is stored as `criterion → score → evidence → concern → suggestion → confidence`.
+
+## Features
+
+- Three curated LLD problems with requirements and difficulty
+- Structured design submission with server-side Zod validation
+- Explicit `SUBMITTED → EVALUATING → COMPLETED / FAILED` lifecycle
+- Replaceable evaluator interface with a deterministic rubric baseline
+- Evidence-backed feedback across seven criteria
+- Versioned attempt history and retry flow
+- Idempotent submissions and transactional result persistence
+- Responsive, accessible UI with meaningful empty/error states
+
+## Tech stack
+
+- Next.js 16 App Router, React 19, and TypeScript
+- Neon Postgres
+- Prisma ORM 7 with the PostgreSQL driver adapter
+- Zod 4 at input and evaluator boundaries
+- Vitest for domain, application, and validation tests
+
+## Run locally
+
+Requirements: Node.js 22+, pnpm 10+, and a Neon project.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Paste the pooled Neon URL into `DATABASE_URL` and the direct URL into `DIRECT_URL`. Then:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open `http://localhost:3000`.
 
-## Learn More
+## Quality commands
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm check
+pnpm build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`pnpm check` runs lint, strict TypeScript checks, and the test suite.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Architecture
 
-## Deploy on Vercel
+```text
+UI / Route Handlers
+        ↓
+Application use cases
+        ↓
+Domain entities + ports
+        ↑
+Prisma repositories / rubric evaluator
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The domain owns valid attempt transitions. The application layer coordinates work. Prisma and evaluators implement ports at the edge. Replacing the rubric evaluator with an LLM or human-review adapter does not change the practice workflow.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Current limitations
+
+- A fixed `demo-learner` identity keeps authentication outside the two-day MVP.
+- Evaluation runs in the request after the submission is committed. The state model is ready for a background worker if latency grows.
+- The deterministic evaluator measures explicit evidence signals; it does not claim semantic understanding. Its purpose is a reliable baseline and a clean extension seam.
+- The MVP supports structured text only. A future diagram submission can implement a new submission-content adapter.
+
+See [Research](docs/RESEARCH.md), [Design](docs/DESIGN.md), and [AI usage](AI_USAGE.md) for the assignment notes.
