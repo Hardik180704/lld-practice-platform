@@ -1,8 +1,5 @@
 import { createHash } from "node:crypto";
-import { EvaluateAttempt } from "@/application/evaluate-attempt";
 import { getPrisma } from "@/infrastructure/database/prisma";
-import { RubricEvaluator } from "@/infrastructure/evaluation/rubric-evaluator";
-import { PrismaAttemptRepository } from "@/infrastructure/repositories/prisma-attempt-repository";
 import { submitAttemptSchema } from "@/validation/submission";
 
 const DEMO_LEARNER_ID = "demo-learner";
@@ -43,8 +40,5 @@ export async function POST(request: Request) {
     });
   });
 
-  const useCase = new EvaluateAttempt(new PrismaAttemptRepository(prisma), new RubricEvaluator());
-  await useCase.execute(attempt.id);
-  const completed = await prisma.attempt.findUniqueOrThrow({ where: { id: attempt.id }, select: { status: true } });
-  return Response.json({ attemptId: attempt.id, status: completed.status }, { status: 201 });
+  return Response.json({ attemptId: attempt.id, status: attempt.status }, { status: 201 });
 }

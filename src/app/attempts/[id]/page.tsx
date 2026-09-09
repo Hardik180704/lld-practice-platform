@@ -1,3 +1,31 @@
-import Link from "next/link"; import { notFound } from "next/navigation"; import { ArrowLeft,RotateCcw } from "lucide-react"; import { getPrisma } from "@/infrastructure/database/prisma";
-export const dynamic="force-dynamic";
-export default async function AttemptPage({params}:{params:Promise<{id:string}>}){const{id}=await params;const attempt=await getPrisma().attempt.findUnique({where:{id},include:{problem:true,evaluation:{include:{results:{include:{criterion:true},orderBy:{criterion:{position:"asc"}}}}}}});if(!attempt)notFound();return <main className="page-shell"><Link className="back" href="/history"><ArrowLeft size={15}/> Attempt history</Link><header className="problem-header"><p className="kicker">{attempt.problem.title} · attempt {attempt.version}</p><h1 className="page-title">Design feedback</h1></header>{attempt.evaluation?<><section className="result-hero"><div className="score-ring"><div><strong>{attempt.evaluation.overallScore}</strong><small>/100</small></div></div><div><h2>{attempt.evaluation.overallScore>=70?"Solid direction.":"Promising foundation."}</h2><p>{attempt.evaluation.summary}</p><Link className="button ghost" href={`/problems/${attempt.problem.slug}`}><RotateCcw size={16}/> Try another version</Link></div></section><section className="rubric-list">{attempt.evaluation.results.map(result=><article className="rubric-card" key={result.id}><div className="rubric-title"><h3>{result.criterion.title}</h3><strong>{result.score}/{result.criterion.maxScore}</strong></div><h4>Evidence</h4>{result.evidence.map(item=><p key={item}>{item}</p>)}{result.concerns.length>0&&<><h4>Concern</h4><ul>{result.concerns.map(item=><li key={item}>{item}</li>)}</ul></>}<h4>Next step</h4>{result.suggestions.map(item=><p className="next-step" key={item}>{item}</p>)}</article>)}</section></>:<div className="empty"><p>Evaluation status: {attempt.status}</p>{attempt.failureReason&&<p>{attempt.failureReason}</p>}</div>}</main>}
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft, RotateCcw } from "lucide-react";
+import { EvaluationProgress } from "@/components/evaluation-progress";
+import { getPrisma } from "@/infrastructure/database/prisma";
+
+export const dynamic = "force-dynamic";
+
+export default async function AttemptPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const attempt = await getPrisma().attempt.findUnique({
+    where: { id },
+    include: { problem: true, evaluation: { include: { results: { include: { criterion: true }, orderBy: { criterion: { position: "asc" } } } } } },
+  });
+  if (!attempt) notFound();
+
+  return (
+    <main className="page-shell">
+      <Link className="back" href="/history"><ArrowLeft size={15} /> Attempt history</Link>
+      <header className="feedback-header"><p className="kicker">{attempt.problem.title} · attempt {attempt.version}</p><h1 className="page-title">Design feedback</h1></header>
+      {attempt.evaluation ? (
+        <>
+          <section className="result-hero"><div className="score-ring"><div><strong>{attempt.evaluation.overallScore}</strong><small>/100</small></div></div><div><h2>{attempt.evaluation.overallScore >= 70 ? "Solid direction." : "Promising foundation."}</h2><p>{attempt.evaluation.summary}</p><Link className="button ghost" href={`/problems/${attempt.problem.slug}`}><RotateCcw size={16} /> Try another version</Link></div></section>
+          <section className="rubric-list">{attempt.evaluation.results.map((result) => <article className="rubric-card" key={result.id}><div className="rubric-title"><h3>{result.criterion.title}</h3><strong>{result.score}/{result.criterion.maxScore}</strong></div><h4>Evidence</h4>{result.evidence.map((item) => <p key={item}>{item}</p>)}{result.concerns.length > 0 ? <><h4>Concern</h4><ul>{result.concerns.map((item) => <li key={item}>{item}</li>)}</ul></> : null}<h4>Next step</h4>{result.suggestions.map((item) => <p className="next-step" key={item}>{item}</p>)}</article>)}</section>
+        </>
+      ) : (
+        <EvaluationProgress attemptId={attempt.id} status={attempt.status} failureReason={attempt.failureReason} />
+      )}
+    </main>
+  );
+}

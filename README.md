@@ -14,6 +14,7 @@ LLD problems rarely have one correct class diagram. A useful practice tool there
 - Replaceable evaluator interface with a deterministic rubric baseline
 - Evidence-backed feedback across seven criteria
 - Versioned attempt history and retry flow
+- Local draft auto-save that survives accidental refreshes
 - Idempotent submissions and transactional result persistence
 - Responsive, accessible UI with meaningful empty/error states
 
@@ -71,7 +72,7 @@ The domain owns valid attempt transitions. The application layer coordinates wor
 ## Current limitations
 
 - A fixed `demo-learner` identity keeps authentication outside the two-day MVP.
-- Evaluation runs in the request after the submission is committed. The state model is ready for a background worker if latency grows.
+- Submission and evaluation use separate requests, so learner work is committed before evaluation starts. A durable background queue is deliberately deferred; the state model is ready for one if latency or traffic grows.
 - The deterministic evaluator measures explicit evidence signals; it does not claim semantic understanding. Its purpose is a reliable baseline and a clean extension seam.
 - The MVP supports structured text only. A future diagram submission can implement a new submission-content adapter.
 

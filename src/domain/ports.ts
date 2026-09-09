@@ -13,7 +13,10 @@ export type AttemptForEvaluation = {
 
 export interface AttemptRepository {
   findForEvaluation(attemptId: string): Promise<AttemptForEvaluation | null>;
-  markEvaluating(attemptId: string): Promise<void>;
+  markEvaluating(
+    attemptId: string,
+    expectedStatus: "SUBMITTED" | "FAILED",
+  ): Promise<boolean>;
   complete(attemptId: string, result: EvaluationResult): Promise<void>;
   fail(attemptId: string, reason: string): Promise<void>;
 }

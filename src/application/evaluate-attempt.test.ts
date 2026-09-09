@@ -1,12 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { EvaluateAttempt, AttemptNotFoundError } from "./evaluate-attempt";
+import {
+  AttemptEvaluationConflictError,
+  AttemptNotFoundError,
+  EvaluateAttempt,
+} from "./evaluate-attempt";
 import type { AttemptRepository } from "@/domain/ports";
 import type { SubmissionEvaluator } from "@/domain/evaluation";
 
 function repository(): AttemptRepository {
   return {
     findForEvaluation: vi.fn().mockResolvedValue({ id:"a1",status:"SUBMITTED",submission:{assumptions:"a",design:"d",tradeoffs:"t",edgeCases:"e"},rubric:[] }),
-    markEvaluating: vi.fn(), complete: vi.fn(), fail: vi.fn(),
+    markEvaluating: vi.fn().mockResolvedValue(true), complete: vi.fn(), fail: vi.fn(),
   };
 }
 
@@ -16,7 +20,7 @@ describe("EvaluateAttempt", () => {
   it("stores a successful evaluation", async () => {
     const repo=repository(); const evaluator:SubmissionEvaluator={evaluate:vi.fn().mockResolvedValue(result)};
     await new EvaluateAttempt(repo,evaluator).execute("a1");
-    expect(repo.markEvaluating).toHaveBeenCalledWith("a1");
+    expect(repo.markEvaluating).toHaveBeenCalledWith("a1", "SUBMITTED");
     expect(repo.complete).toHaveBeenCalledWith("a1",result);
     expect(repo.fail).not.toHaveBeenCalled();
   });
@@ -30,5 +34,10 @@ describe("EvaluateAttempt", () => {
   it("rejects a missing attempt", async () => {
     const repo=repository(); vi.mocked(repo.findForEvaluation).mockResolvedValue(null);
     await expect(new EvaluateAttempt(repo,{evaluate:vi.fn()}).execute("missing")).rejects.toBeInstanceOf(AttemptNotFoundError);
+  });
+
+  it("prevents two workers from evaluating the same attempt", async () => {
+    const repo=repository(); vi.mocked(repo.markEvaluating).mockResolvedValue(false);
+    await expect(new EvaluateAttempt(repo,{evaluate:vi.fn()}).execute("a1")).rejects.toBeInstanceOf(AttemptEvaluationConflictError);
   });
 });

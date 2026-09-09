@@ -9,6 +9,13 @@ export class AttemptNotFoundError extends Error {
   }
 }
 
+export class AttemptEvaluationConflictError extends Error {
+  constructor(attemptId: string) {
+    super(`Attempt ${attemptId} is already being evaluated or is complete.`);
+    this.name = "AttemptEvaluationConflictError";
+  }
+}
+
 export class EvaluateAttempt {
   constructor(
     private readonly attempts: AttemptRepository,
@@ -21,7 +28,8 @@ export class EvaluateAttempt {
 
     const attempt = new Attempt(record.id, record.status);
     attempt.transitionTo("EVALUATING");
-    await this.attempts.markEvaluating(attemptId);
+    const claimed = await this.attempts.markEvaluating(attemptId, record.status);
+    if (!claimed) throw new AttemptEvaluationConflictError(attemptId);
 
     try {
       const result = await this.evaluator.evaluate(record.submission, record.rubric);

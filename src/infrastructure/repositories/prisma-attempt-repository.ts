@@ -28,8 +28,12 @@ export class PrismaAttemptRepository implements AttemptRepository {
     };
   }
 
-  async markEvaluating(attemptId: string) {
-    await this.prisma.attempt.update({ where: { id: attemptId }, data: { status: "EVALUATING", failureReason: null } });
+  async markEvaluating(attemptId: string, expectedStatus: "SUBMITTED" | "FAILED") {
+    const result = await this.prisma.attempt.updateMany({
+      where: { id: attemptId, status: expectedStatus },
+      data: { status: "EVALUATING", failureReason: null },
+    });
+    return result.count === 1;
   }
 
   async complete(attemptId: string, result: EvaluationResult) {

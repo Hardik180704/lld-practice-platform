@@ -23,7 +23,7 @@ Deterministic responsibilities include input shape, required depth, lifecycle tr
 
 ## Failure and latency
 
-The submission and its hash are committed before evaluation starts. The attempt moves to `EVALUATING`, then `COMPLETED` or `FAILED`. Evaluator errors are captured as failure reasons. For the MVP, evaluation remains synchronous. If latency grows, the first separation would be a background evaluation worker consuming attempt IDs; the domain and UI states already support that change.
+The submission and its hash are committed before a separate evaluation request starts. The result page displays live status while the attempt moves to `EVALUATING`, then `COMPLETED` or `FAILED`. Evaluator errors are captured as failure reasons and can be retried. An atomic status update prevents duplicate workers from claiming the same attempt. If latency or traffic grows, the next separation would be a durable background worker consuming attempt IDs; the domain and UI states already support that change.
 
 ## Change tests
 
