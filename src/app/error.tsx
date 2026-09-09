@@ -1,0 +1,2 @@
+"use client";
+export default function ErrorPage({reset}:{error:Error&{digest?:string};reset:()=>void}){return <main className="page-shell"><p className="kicker">Unexpected error</p><h1 className="page-title">Something went wrong.</h1><p className="hero-copy">The request could not be completed. Your previous submission is protected by its idempotency key.</p><button className="button primary" onClick={reset}>Try again</button></main>}
