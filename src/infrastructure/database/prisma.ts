@@ -6,7 +6,10 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 export function getPrisma(): PrismaClient {
   if (globalForPrisma.prisma) return globalForPrisma.prisma;
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DATABASE_URL?.replace(
+    "sslmode=require",
+    "sslmode=verify-full",
+  );
   if (!connectionString) {
     throw new Error("DATABASE_URL is not configured. Copy .env.example to .env.local.");
   }

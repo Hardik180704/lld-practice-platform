@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>
+  return <html lang="en" data-scroll-behavior="smooth"><body>
     <header className="site-header"><nav className="shell nav"><Link className="brand" href="/"><span><Blocks size={20} /></span>DesignLoop</Link><div><Link href="/#problems">Problems</Link><Link href="/history">History</Link></div></nav></header>
     {children}
     <footer><div className="shell"><span>DesignLoop</span><p>Deliberate practice for better object-oriented design.</p></div></footer>
